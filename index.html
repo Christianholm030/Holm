@@ -1,23 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Community Kitchen – Grocery List</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     body {
       margin: 0;
       padding: 0;
       font-family: 'Inter', sans-serif;
-      background-color: #fff8f0;
-	background-image: url('background.png');
-	background-repeat: no-repeat;
-	background-size: cover;
-	background-position: center;
-	background-attachment: fixed;
-
-
+      background-image: url('background.png');
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
     }
 
     .container {
@@ -122,27 +119,16 @@
     .delete:hover {
       background-color: #c0392b;
     }
-
-    @media (max-width: 480px) {
-      .container {
-        margin: 2rem 1rem;
-        padding: 1.5rem;
-      }
-
-      h1 {
-        font-size: 2rem;
-      }
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🍕 Community Grocery List</h1>
-    <p class="subheading">Add what we need for our kitchen 🥑</p>
+    <p class="subheading">Add what we need for our happy shared kitchen 🥑</p>
 
     <form id="form">
-      <input type="text" id="item" placeholder="Item name..." required>
-      <input type="number" id="amount" placeholder="Qty" min="1" value="1" required>
+      <input type="text" id="item" placeholder="Item name..." required />
+      <input type="number" id="amount" placeholder="Qty" min="1" value="1" required />
       <button type="submit">Add</button>
     </form>
 
@@ -151,54 +137,71 @@
     <ul id="list"></ul>
   </div>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
   <script>
-    const form = document.getElementById('form');
-    const itemInput = document.getElementById('item');
-    const amountInput = document.getElementById('amount');
-    const list = document.getElementById('list');
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCkRyH6fblq1f_vWuxITsxbVSXFt-VsZks",
+      authDomain: "shoppinglistkk37.firebaseapp.com",
+      databaseURL: "https://shoppinglistkk37-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "shoppinglistkk37",
+      storageBucket: "shoppinglistkk37.firebasestorage.app",
+      messagingSenderId: "564287388946",
+      appId: "1:564287388946:web:a915c135a48a5f6bfa87cb"
+    };
 
-    let items = JSON.parse(localStorage.getItem('groceryList')) || [];
+    // Init Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const listRef = db.ref("items");
 
-    function renderList() {
-      list.innerHTML = '';
-      items.forEach((entry, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          ${entry.item} – ${entry.amount} pcs 
-          <button class="delete" onclick="deleteItem(${index})">Remove</button>
-        `;
-        list.appendChild(li);
-      });
-    }
+    const form = document.getElementById("form");
+    const itemInput = document.getElementById("item");
+    const amountInput = document.getElementById("amount");
+    const list = document.getElementById("list");
 
-    function deleteItem(index) {
-      items.splice(index, 1);
-      localStorage.setItem('groceryList', JSON.stringify(items));
-      renderList();
-    }
-
-    function clearList() {
-      if (confirm("Are you sure you want to clear the entire list?")) {
-        items = [];
-        localStorage.removeItem('groceryList');
-        renderList();
-      }
-    }
-
-    form.addEventListener('submit', e => {
+    // Add item
+    form.addEventListener("submit", (e) => {
       e.preventDefault();
       const item = itemInput.value.trim();
       const amount = parseInt(amountInput.value);
       if (item && amount > 0) {
-        items.push({ item, amount });
-        localStorage.setItem('groceryList', JSON.stringify(items));
-        itemInput.value = '';
+        const newItemRef = listRef.push();
+        newItemRef.set({ item, amount });
+        itemInput.value = "";
         amountInput.value = 1;
-        renderList();
       }
     });
 
-    renderList();
+    // Listen for changes
+    listRef.on("value", (snapshot) => {
+      list.innerHTML = "";
+      snapshot.forEach((child) => {
+        const key = child.key;
+        const data = child.val();
+        const li = document.createElement("li");
+        li.innerHTML = `
+          ${data.item} – ${data.amount} pcs
+          <button class="delete" onclick="deleteItem('${key}')">Remove</button>
+        `;
+        list.appendChild(li);
+      });
+    });
+
+    // Delete item
+    function deleteItem(key) {
+      listRef.child(key).remove();
+    }
+
+    // Clear list
+    function clearList() {
+      if (confirm("Are you sure you want to clear the entire list?")) {
+        listRef.remove();
+      }
+    }
   </script>
 </body>
 </html>
